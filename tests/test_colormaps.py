@@ -47,6 +47,26 @@ def test_normalize_uniform_field_is_safe():
     assert np.all(np.isfinite(n))
 
 
+def test_normalize_fixed_bounds_clip():
+    # With explicit bounds, values outside the band clamp to the edges.
+    V = np.array([[-1.0, 0.0], [0.2, 5.0]])
+    n = normalize(V, 0.0, 0.4)
+    assert n[0, 0] == 0.0          # below vmin → 0
+    assert n[1, 1] == 1.0          # above vmax → 1
+    assert abs(n[1, 0] - 0.5) < 1e-6  # 0.2 is mid-band
+
+
+def test_apply_fixed_range_is_field_independent():
+    # The same V value maps to the same colour regardless of the rest of
+    # the field (no per-frame rescaling).
+    a = np.full((4, 4), 0.2)
+    b = a.copy()
+    b[0, 0] = 0.9  # change the field's max; mid value must be unaffected
+    rgb_a = apply(a, "inferno")
+    rgb_b = apply(b, "inferno")
+    assert np.array_equal(rgb_a[1, 1], rgb_b[1, 1])
+
+
 def test_next_colormap_cycles():
     current = COLORMAP_NAMES[0]
     seen = set()

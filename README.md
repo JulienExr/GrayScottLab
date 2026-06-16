@@ -2,7 +2,13 @@
 
 An interactive real-time simulation of **Gray-Scott reaction-diffusion patterns** — a class of Turing instabilities that generate the spots, stripes, and labyrinthine shapes found throughout nature.
 
-![screenshot placeholder](outputs/)
+![Gray-Scott maze pattern](outputs/hero.png)
+
+<p align="center">
+  <img src="outputs/evolution.gif" alt="A pattern spreading from the central seed" width="320">
+</p>
+
+> The images above are produced by [`generate_pics.py`](generate_pics.py) — see [Generating artwork](#generating-artwork).
 
 ---
 
@@ -179,6 +185,7 @@ Hand-coded:
 ```
 GrayScottLab/
 ├── main.py                    Entry point + game loop
+├── generate_pics.py           Headless still/GIF generator for the README
 ├── reaction_diffusion/
 │   ├── simulation.py          GrayScottSimulation class (NumPy core)
 │   ├── presets.py             Preset dictionary + helpers
@@ -201,6 +208,23 @@ GrayScottLab/
 ```bash
 pytest tests/ -v
 ```
+
+---
+
+## Generating artwork
+
+The still and animation at the top of this README are generated headlessly
+(no display required) from the simulation itself:
+
+```bash
+pip install -e ".[dev]"   # pulls in Pillow
+python generate_pics.py
+```
+
+This writes `outputs/hero.png` (a developed `maze` pattern) and
+`outputs/evolution.gif` (a `worms` pattern spreading from the seed). Edit the
+`main()` call in `generate_pics.py` to choose other presets, colormaps, sizes,
+or frame counts.
 
 ---
 

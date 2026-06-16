@@ -12,11 +12,26 @@ import numpy as np
 
 _RAMP = np.linspace(0.0, 1.0, 256)
 
+# The V concentration sits in roughly this band for the stable Gray-Scott
+# regimes. Mapping against a *fixed* range (rather than each frame's own
+# min/max) keeps the colours steady instead of "breathing" as the field
+# evolves. Pass vmin/vmax to apply() to override.
+DISPLAY_VMIN = 0.0
+DISPLAY_VMAX = 0.4
 
-def normalize(V: np.ndarray) -> np.ndarray:
-    vmin = V.min()
-    vmax = V.max()
-    return (V - vmin) / (vmax - vmin + 1e-8)
+
+def normalize(
+    V: np.ndarray,
+    vmin: float | None = None,
+    vmax: float | None = None,
+) -> np.ndarray:
+    """Scale V into [0, 1]. With no bounds, uses the field's own min/max."""
+    if vmin is None:
+        vmin = float(V.min())
+    if vmax is None:
+        vmax = float(V.max())
+    n = (V - vmin) / (vmax - vmin + 1e-8)
+    return np.clip(n, 0.0, 1.0)
 
 
 # ----------------------------------------------------------------------
@@ -120,11 +135,20 @@ def next_colormap(current: str) -> str:
     return COLORMAP_NAMES[(idx + 1) % len(COLORMAP_NAMES)]
 
 
-def apply(V: np.ndarray, name: str) -> np.ndarray:
-    """Normalise V and map it through the named colormap → (H, W, 3) uint8."""
+def apply(
+    V: np.ndarray,
+    name: str,
+    vmin: float = DISPLAY_VMIN,
+    vmax: float = DISPLAY_VMAX,
+) -> np.ndarray:
+    """Normalise V and map it through the named colormap → (H, W, 3) uint8.
+
+    By default V is mapped against the fixed [DISPLAY_VMIN, DISPLAY_VMAX]
+    band so colours stay stable frame to frame.
+    """
     lut = LUTS.get(name)
     if lut is None:
         lut = LUTS[COLORMAP_NAMES[0]]
-    v = normalize(V)
+    v = normalize(V, vmin, vmax)
     idx = (v * 255).astype(np.uint8)
     return lut[idx]
