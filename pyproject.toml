@@ -16,6 +16,12 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=7.0.0"]
 
+[project.scripts]
+grayscott = "main:main"
+
+[tool.setuptools]
+py-modules = ["main"]
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["reaction_diffusion*"]

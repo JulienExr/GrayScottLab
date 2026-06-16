@@ -87,6 +87,12 @@ pip install -r requirements.txt
 python main.py
 ```
 
+If installed with `pip install -e .`, a `grayscott` command is also available:
+
+```bash
+grayscott --preset coral
+```
+
 The app launches **fullscreen** by default. Press `ESC` to quit.
 
 **CLI options:**
