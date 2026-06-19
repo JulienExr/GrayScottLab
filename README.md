@@ -1,6 +1,6 @@
 # Gray-Scott Lab
 
-An interactive real-time simulation of **Gray-Scott reaction-diffusion patterns** — a class of Turing instabilities that generate the spots, stripes, and labyrinthine shapes found throughout nature.
+An interactive real-time simulation of **Gray-Scott reaction-diffusion patterns** : a class of Turing instabilities that generate the spots, stripes, and labyrinthine shapes found throughout nature.
 
 ![Gray-Scott maze pattern](outputs/hero.png)
 
@@ -8,7 +8,7 @@ An interactive real-time simulation of **Gray-Scott reaction-diffusion patterns*
   <img src="outputs/evolution.gif" alt="A pattern spreading from the central seed" width="320">
 </p>
 
-> The images above are produced by [`generate_pics.py`](generate_pics.py) — see [Generating artwork](#generating-artwork).
+> The images above are produced by [`generate_pics.py`](generate_pics.py) : see [Generating artwork](#generating-artwork).
 
 ---
 
@@ -20,10 +20,10 @@ The simulation runs at 60 fps in a fullscreen window with an **interactive contr
 
 ### Highlights
 
-- **Live control panel** — drag sliders for Feed (F), Kill (k) and the two diffusion rates and watch the pattern morph instantly; buttons to cycle presets/colormaps, pause, reset, and save.
-- **Fullscreen by default** — the simulation auto-fits the screen next to the panel (use `--windowed` for a resizable window).
-- **Vibrant colormaps** — perceptual maps (inferno, magma, plasma, viridis, turbo, twilight) via matplotlib, plus hand-coded ones (fire, neon, toxic, ocean, grayscale).
-- **Paint with the mouse** — left-drag to inject the V chemical, right-drag to erase.
+- **Live control panel** : drag sliders for Feed (F), Kill (k) and the two diffusion rates and watch the pattern morph instantly; buttons to cycle presets/colormaps, pause, reset, and save.
+- **Fullscreen by default** : the simulation auto-fits the screen next to the panel (use `--windowed` for a resizable window).
+- **Vibrant colormaps** : perceptual maps (inferno, magma, plasma, viridis, turbo, twilight) via matplotlib, plus hand-coded ones (fire, neon, toxic, ocean, grayscale).
+- **Paint with the mouse** : left-drag to inject the V chemical, right-drag to erase.
 
 ---
 
@@ -62,7 +62,7 @@ Small changes in (F, k) produce qualitatively different morphologies. The parame
 
 **Connection to Turing patterns and morphogenesis:**
 
-Alan Turing proposed in 1952 (*"The Chemical Basis of Morphogenesis"*) that pairs of diffusing chemicals — one activating itself and inhibiting the other, the other doing the reverse — could spontaneously break spatial symmetry and form stable periodic patterns. This is now called a **Turing instability**.
+Alan Turing proposed in 1952 (*"The Chemical Basis of Morphogenesis"*) that pairs of diffusing chemicals : one activating itself and inhibiting the other, the other doing the reverse : could spontaneously break spatial symmetry and form stable periodic patterns. This is now called a **Turing instability**.
 
 Gray-Scott is one of the cleanest examples: V activates itself (`U·V²` term), U is the inhibitor that gets consumed. The crucial ingredient is the **diffusion ratio** `Du/Dv > 1`: the inhibitor must diffuse faster than the activator, which prevents any local dominance from spreading too fast. The interplay between reaction and differential diffusion drives the system away from the uniform state and into the rich pattern space you see here.
 
@@ -73,7 +73,7 @@ These mechanisms appear in real biology: skin pigmentation (zebrafish stripes), 
 ## Installation
 
 ```bash
-git clone https://github.com/your-username/GrayScottLab.git
+git clone https://github.com/JulienExr/GrayScottLab.git
 cd GrayScottLab
 pip install -e ".[dev]"
 ```
@@ -167,16 +167,16 @@ All presets use `Du=0.2097, Dv=0.1050` except `fingerprints` (`Du=0.19, Dv=0.05`
 Cycle them live with `C` or the **Color** button.
 
 Perceptual (via matplotlib, fall back gracefully if not installed):
-- **inferno**, **magma**, **plasma**, **viridis** — smooth perceptual gradients
-- **turbo** — high-contrast rainbow
-- **twilight** — cyclic blue↔red
+- **inferno**, **magma**, **plasma**, **viridis** : smooth perceptual gradients
+- **turbo** : high-contrast rainbow
+- **twilight** : cyclic blue↔red
 
 Hand-coded:
-- **fire** — black → red → yellow → white
-- **neon** — magenta → cyan → bright
-- **toxic** — black → acid green
-- **ocean** — deep blue → teal → white
-- **grayscale** — clean, neutral, scientific
+- **fire** : black → red → yellow → white
+- **neon** : magenta → cyan → bright
+- **toxic** : black → acid green
+- **ocean** : deep blue → teal → white
+- **grayscale** : clean, neutral, scientific
 
 ---
 
@@ -230,18 +230,14 @@ or frame counts.
 
 ## Ideas for Future Improvements
 
-1. **GPU acceleration with Taichi or CuPy** — the Laplacian convolution is embarrassingly parallel; a GPU would allow 1024×1024 grids at 60 fps.
+1. **GPU acceleration with Taichi or CuPy** : the Laplacian convolution is embarrassingly parallel; a GPU would allow 1024×1024 grids at 60 fps.
 
-2. **GIF / video export** — accumulate frames in a ring buffer and write them to an animated GIF (imageio) or MP4 (ffmpeg) on demand, capturing the pattern evolution over time.
+2. **GIF / video export** : accumulate frames in a ring buffer and write them to an animated GIF (imageio) or MP4 (ffmpeg) on demand, capturing the pattern evolution over time.
 
-3. **Adjustable brush + seed shapes** — a brush-size slider and circle/line/image seed masks for more expressive initial conditions and painting.
+3. **Adjustable brush + seed shapes** : a brush-size slider and circle/line/image seed masks for more expressive initial conditions and painting.
 
-4. **Parameter-space map** — overlay the current (F, k) on the empirical Gray-Scott phase diagram so you can navigate by clicking regions.
+4. **Parameter-space map** : overlay the current (F, k) on the empirical Gray-Scott phase diagram so you can navigate by clicking regions.
 
-5. **Multispecies models** — extend to 3-species systems (e.g., Oregonator, Brusselator) to access richer pattern classes including spirals and travelling waves.
+5. **Multispecies models** : extend to 3-species systems (e.g., Oregonator, Brusselator) to access richer pattern classes including spirals and travelling waves.
 
 ---
-
-## License
-
-MIT
