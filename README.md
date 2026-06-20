@@ -2,7 +2,9 @@
 
 An interactive real-time simulation of **Gray-Scott reaction-diffusion patterns** : a class of Turing instabilities that generate the spots, stripes, and labyrinthine shapes found throughout nature.
 
-![Gray-Scott maze pattern](outputs/hero.png)
+<p align="center">
+  <img src="outputs/hero.png" alt="Gray-Scott maze pattern" width="520">
+</p>
 
 <p align="center">
   <img src="outputs/evolution.gif" alt="A pattern spreading from the central seed" width="320">
@@ -21,9 +23,16 @@ The simulation runs at 60 fps in a fullscreen window with an **interactive contr
 ### Highlights
 
 - **Live control panel** : drag sliders for Feed (F), Kill (k) and the two diffusion rates and watch the pattern morph instantly; buttons to cycle presets/colormaps, pause, reset, and save.
+- **Phase-space map** : a clickable (F, k) diagram of the parameter space — each region is tinted by its nearest preset, a crosshair tracks the current params, and clicking jumps there live. Navigate the pattern zoo by exploring the map instead of guessing numbers.
+- **Optional GPU backend** : `--gpu` runs the whole update as one fused [Taichi](https://www.taichi-lang.org/) kernel — **~100× faster** than the NumPy core, enough for 1024×1024 grids well above 60 fps. Falls back to NumPy when Taichi isn't installed. See [Performance](#performance).
 - **Fullscreen by default** : the simulation auto-fits the screen next to the panel (use `--windowed` for a resizable window).
 - **Vibrant colormaps** : perceptual maps (inferno, magma, plasma, viridis, turbo, twilight) via matplotlib, plus hand-coded ones (fire, neon, toxic, ocean, grayscale).
 - **Paint with the mouse** : left-drag to inject the V chemical, right-drag to erase.
+
+<p align="center">
+  <img src="outputs/gallery.png" alt="Five Gray-Scott presets: spots, maze, worms, cells, fingerprints" width="760">
+</p>
+<p align="center"><sub>Five presets grown from random noise — left to right: spots, maze, worms, cells, fingerprints.</sub></p>
 
 ---
 
@@ -36,10 +45,20 @@ The Gray-Scott model is a system of two coupled reaction-diffusion PDEs:
 ∂V/∂t = Dv · ∇²V  +  U·V²  −  (F + k)·V
 ```
 
+**Reading the equations term by term:**
+
+| Term | Meaning |
+|---|---|
+| `Du·∇²U`, `Dv·∇²V` | **Diffusion** — each chemical spreads out, smoothing local gradients. |
+| `−U·V²` / `+U·V²` | **Reaction** — the autocatalytic step `U + 2V → 3V`: one U and two V produce three V. It removes U and creates V, and is quadratic in V, so it only fires where V is already present. |
+| `+F·(1 − U)` | **Feed** — U is replenished toward 1 at rate `F` (the "food" supply). |
+| `−(F + k)·V` | **Kill** — V is removed at rate `F + k`, so V decays unless the reaction keeps feeding it. |
+
 **Intuition:**
 - `U` is a "food" chemical, continuously supplied at rate `F`.
-- `V` is an "activator" that consumes U autocatalytically (`U + 2V → 3V`) and decays at rate `F + k`.
-- The two species diffuse at different rates: `Du > Dv`, meaning U spreads faster than V.
+- `V` is an "activator" that consumes U autocatalytically and decays at rate `F + k`.
+- The two species diffuse at different rates: `Du > Dv`, meaning U spreads faster than V. This **differential diffusion** is what makes patterns possible (see Turing, below).
+- The uniform state `U = 1, V = 0` is always an equilibrium. Patterns are what happens when a perturbation to that state grows instead of dying — a balance between the reaction creating V and diffusion + kill erasing it.
 
 **The Laplacian `∇²`** is approximated on a discrete grid with a weighted 3×3 stencil:
 
@@ -50,6 +69,15 @@ The Gray-Scott model is a system of two coupled reaction-diffusion PDEs:
 ```
 
 This stencil sums to zero (a valid Laplacian) and uses periodic boundary conditions (the grid wraps toroidally).
+
+**Numerical integration.** Time is advanced with an explicit **forward-Euler** step of size `Δt = 1` (folded into the diffusion constants), updating every cell in parallel:
+
+```
+Uₙ₊₁ = Uₙ + Δt · ( Du·∇²Uₙ − Uₙ·Vₙ² + F·(1 − Uₙ) )
+Vₙ₊₁ = Vₙ + Δt · ( Dv·∇²Vₙ + Uₙ·Vₙ² − (F + k)·Vₙ )
+```
+
+Both fields are clamped to `[0, 1]` each step for numerical safety. Explicit diffusion is only stable when the diffusion term is small enough per step (the usual `D·Δt ≤ ¼` CFL-type bound for a 2-D 5-point stencil); the preset constants stay comfortably inside it, which is why each on-screen frame integrates several sub-steps (the **Speed** slider) rather than one big step. This per-cell, neighbours-only update is **embarrassingly parallel**, which is exactly what the [GPU backend](#performance) exploits.
 
 **Parameters F and k:**
 
@@ -83,7 +111,13 @@ Or without editable install:
 pip install -r requirements.txt
 ```
 
-**Requirements:** Python 3.10+, pygame 2.5+, numpy 1.24+
+**Optional GPU backend** (for `--gpu`):
+```bash
+pip install -e ".[gpu]"     # pulls in Taichi
+```
+Taichi ships its own runtime and selects a backend automatically — CUDA on an NVIDIA GPU, Vulkan on an Intel/AMD iGPU, or CPU as a fallback — so no CUDA toolkit install is required.
+
+**Requirements:** Python 3.10+, pygame 2.5+, numpy 1.24+ (Taichi 1.7+ optional, for `--gpu`)
 
 ---
 
@@ -110,12 +144,14 @@ The app launches **fullscreen** by default. Press `ESC` to quit.
 | `--steps N` | preset default | Simulation steps per frame |
 | `--seed N` | random | Random seed for reproducibility |
 | `--windowed` | off | Run in a resizable window instead of fullscreen |
+| `--gpu` | off | Use the Taichi GPU backend (requires the `gpu` extra) |
 
 **Examples:**
 ```bash
 python main.py --preset coral
 python main.py --preset fingerprints --size 320
 python main.py --preset spots --seed 42 --windowed
+python main.py --size 1024 --gpu          # large grid, real-time on a GPU
 ```
 
 ---
@@ -125,9 +161,14 @@ python main.py --preset spots --seed 42 --windowed
 Everything is reachable from the on-screen **control panel** (right side), but
 keyboard and mouse shortcuts are available too:
 
+<p align="center">
+  <img src="outputs/ui_phasemap.png" alt="The app: a maze pattern on the left, control panel with sliders and the (F,k) phase map on the right" width="720">
+</p>
+
 | Control | Action |
 |---|---|
 | **Sliders** | Tune Feed (F), Kill (k), Diffuse U/V, and Speed live |
+| **Phase map** | Click/drag the (F, k) diagram to jump anywhere in parameter space |
 | **Buttons** | Cycle preset / colormap, Pause, Reset, Save PNG |
 | `SPACE` | Pause / resume |
 | `R` | Reset simulation |
@@ -143,6 +184,24 @@ keyboard and mouse shortcuts are available too:
 > Editing a slider changes the model immediately without resetting the grid, so
 > you can watch one pattern continuously morph into another. Press **Reset** (or
 > `R`) to re-seed the grid; your slider values are kept.
+
+---
+
+## Performance
+
+The update is purely local — every cell only reads its 8 neighbours — so it parallelises perfectly. Two interchangeable backends share one API (`reaction_diffusion.create_simulation(..., backend=...)`):
+
+- **`cpu`** (default) — pure NumPy. The Laplacian is a weighted `np.roll` stencil; portable, zero extra dependencies.
+- **`gpu`** (`--gpu`) — [Taichi](https://www.taichi-lang.org/). The Laplacian, reaction and clamp are **fused into a single kernel** with one launch per step (vs. NumPy's ~30 array ops), double-buffered to update every cell in parallel.
+
+Measured on an RTX 4070 Laptop GPU, 1024×1024 grid, 10 sub-steps per frame (device→host readback included):
+
+| Backend | ms / frame | fps | Speed-up |
+|---|---:|---:|---:|
+| NumPy (CPU) | ~337 | ~3 | 1× |
+| **Taichi (CUDA)** | **~3.3** | **~300** | **~100×** |
+
+That headroom is what makes 1024×1024 comfortably real-time. Taichi auto-selects CUDA / Vulkan / CPU, so `--gpu` also accelerates machines without an NVIDIA card; it degrades gracefully to the NumPy path when Taichi isn't installed.
 
 ---
 
@@ -188,14 +247,18 @@ GrayScottLab/
 ├── generate_pics.py           Headless still/GIF generator for the README
 ├── reaction_diffusion/
 │   ├── simulation.py          GrayScottSimulation class (NumPy core)
+│   ├── simulation_taichi.py   TaichiGrayScottSimulation (fused GPU kernel)
+│   ├── __init__.py            Package exports + create_simulation() factory
 │   ├── presets.py             Preset dictionary + helpers
 │   ├── renderer.py            Pygame renderer, viewport + HUD
-│   ├── ui.py                  Slider / Button / Panel widgets
+│   ├── ui.py                  Slider / Button / PhaseMap / Panel widgets
 │   ├── colormaps.py           LUT colormaps (V → RGB)
 │   ├── controls.py            AppState + event handling
 │   └── utils.py               File I/O + coordinate helpers
 ├── tests/
 │   ├── test_simulation.py
+│   ├── test_simulation_taichi.py   GPU backend (auto-skipped without Taichi)
+│   ├── test_ui.py                  PhaseMap mapping + Panel wiring
 │   ├── test_presets.py
 │   └── test_colormaps.py
 └── outputs/                   Screenshots saved here
@@ -221,8 +284,9 @@ pip install -e ".[dev]"   # pulls in Pillow
 python generate_pics.py
 ```
 
-This writes `outputs/hero.png` (a developed `maze` pattern) and
-`outputs/evolution.gif` (a `worms` pattern spreading from the seed). Edit the
+This writes `outputs/hero.png` (a developed `maze` pattern),
+`outputs/evolution.gif` (a `worms` pattern spreading from the seed), and
+`outputs/gallery.png` (the five-preset montage shown above). Edit the
 `main()` call in `generate_pics.py` to choose other presets, colormaps, sizes,
 or frame counts.
 
@@ -230,14 +294,14 @@ or frame counts.
 
 ## Ideas for Future Improvements
 
-1. **GPU acceleration with Taichi or CuPy** : the Laplacian convolution is embarrassingly parallel; a GPU would allow 1024×1024 grids at 60 fps.
+1. **GIF / video export** : accumulate frames in a ring buffer and write them to an animated GIF (imageio) or MP4 (ffmpeg) on demand, capturing the pattern evolution over time.
 
-2. **GIF / video export** : accumulate frames in a ring buffer and write them to an animated GIF (imageio) or MP4 (ffmpeg) on demand, capturing the pattern evolution over time.
+2. **Adjustable brush + seed shapes** : a brush-size slider and circle/line/image seed masks for more expressive initial conditions and painting.
 
-3. **Adjustable brush + seed shapes** : a brush-size slider and circle/line/image seed masks for more expressive initial conditions and painting.
+3. **Multispecies models** : extend to 3-species systems (e.g., Oregonator, Brusselator) to access richer pattern classes including spirals and travelling waves.
 
-4. **Parameter-space map** : overlay the current (F, k) on the empirical Gray-Scott phase diagram so you can navigate by clicking regions.
+4. **Keep V on the GPU end-to-end** : render directly from the Taichi field (or via a colormap kernel) to drop the per-frame device→host copy and push very large grids even higher.
 
-5. **Multispecies models** : extend to 3-species systems (e.g., Oregonator, Brusselator) to access richer pattern classes including spirals and travelling waves.
+> ✅ **Done:** **GPU acceleration** via the Taichi backend (see [Performance](#performance)) and the clickable **(F, k) phase-space map** (see [Controls](#controls)) — both were items on the original wishlist.
 
 ---

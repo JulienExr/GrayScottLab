@@ -15,6 +15,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0.0", "pillow>=10.0.0"]
+gpu = ["taichi>=1.7.0"]
 
 [project.scripts]
 grayscott = "main:main"

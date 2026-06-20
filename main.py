@@ -11,12 +11,13 @@ from reaction_diffusion import (
     PRESET_NAMES,
     PRESETS,
     apply,
+    create_simulation,
     next_colormap,
     next_preset,
 )
 from reaction_diffusion.controls import AppState, handle_events
 from reaction_diffusion.renderer import Renderer
-from reaction_diffusion.ui import Button, Panel, Slider
+from reaction_diffusion.ui import Button, Panel, PhaseMap, Slider
 from reaction_diffusion.utils import timestamp_filename
 
 PARAM_SLIDERS = ("F", "k", "Du", "Dv")
@@ -44,6 +45,8 @@ def parse_args() -> argparse.Namespace:
                         help="Random seed for reproducible initialisation")
     parser.add_argument("--windowed", action="store_true",
                         help="Run in a resizable window instead of fullscreen")
+    parser.add_argument("--gpu", action="store_true",
+                        help="Use the Taichi GPU backend (requires the 'gpu' extra)")
     return parser.parse_args()
 
 
@@ -89,6 +92,10 @@ def build_panel(renderer: Renderer, sim: GrayScottSimulation, state: AppState) -
         lambda: "LMB paint  ·  RMB erase",
         lambda: "Press  H  for full help",
     ]
+
+    points = [(name, PRESETS[name]["F"], PRESETS[name]["k"]) for name in PRESET_NAMES]
+    panel.set_phase_map(PhaseMap(points))
+
     panel.layout()
     return panel
 
@@ -105,7 +112,19 @@ def main() -> None:
         print("Error: --size must be >= 16", file=sys.stderr)
         sys.exit(1)
 
-    sim = GrayScottSimulation(size=args.size, preset=args.preset, seed=args.seed)
+    backend = "gpu" if args.gpu else "cpu"
+    try:
+        sim = create_simulation(
+            size=args.size, preset=args.preset, seed=args.seed, backend=backend
+        )
+    except ImportError:
+        print(
+            "Error: --gpu needs Taichi. Install it with:  pip install -e \".[gpu]\"",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    if args.gpu:
+        print(f"GPU backend active (Taichi arch: {getattr(sim, 'backend', '?')})")
     renderer = Renderer(size=args.size, fullscreen=not args.windowed)
 
     state = AppState(
@@ -119,6 +138,12 @@ def main() -> None:
     brush = max(4, args.size // 28)
 
     while state.running:
+        # Snapshot the speed *before* any event is processed this frame, so we can
+        # tell whether the slider drag (handled in step 1) or the +/- keys (handled
+        # in handle_events) changed it.
+        spf_before_slider = panel.sliders["spf"].value
+        spf_before_state = state.steps_per_frame
+
         # 1. Collect events; let the UI panel consume its own, pass the rest on.
         remaining: list[pygame.event.Event] = []
         for event in pygame.event.get():
@@ -128,8 +153,6 @@ def main() -> None:
             elif not panel.handle_event(event):
                 remaining.append(event)
 
-        spf_before_slider = panel.sliders["spf"].value
-        spf_before_state = state.steps_per_frame
         handle_events(remaining, state, renderer.viewport_tuple, sim.size)
 
         # 2. Reconcile speed between the slider and keyboard +/- shortcuts.
