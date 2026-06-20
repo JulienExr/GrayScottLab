@@ -18,6 +18,7 @@ class Renderer:
         "MOUSE",
         "  Left  drag   inject V (paint)",
         "  Right drag   erase  V (clear)",
+        "  Phase map    click to set F, k",
         "",
         "KEYBOARD",
         "  SPACE  pause / resume",
