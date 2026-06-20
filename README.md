@@ -294,14 +294,11 @@ or frame counts.
 
 ## Ideas for Future Improvements
 
-1. **GIF / video export** : accumulate frames in a ring buffer and write them to an animated GIF (imageio) or MP4 (ffmpeg) on demand, capturing the pattern evolution over time.
 
-2. **Adjustable brush + seed shapes** : a brush-size slider and circle/line/image seed masks for more expressive initial conditions and painting.
+1. **Adjustable brush + seed shapes** : a brush-size slider and circle/line/image seed masks for more expressive initial conditions and painting.
 
-3. **Multispecies models** : extend to 3-species systems (e.g., Oregonator, Brusselator) to access richer pattern classes including spirals and travelling waves.
+2. **Multispecies models** : extend to 3-species systems (e.g., Oregonator, Brusselator) to access richer pattern classes including spirals and travelling waves.
 
-4. **Keep V on the GPU end-to-end** : render directly from the Taichi field (or via a colormap kernel) to drop the per-frame device→host copy and push very large grids even higher.
 
-> ✅ **Done:** **GPU acceleration** via the Taichi backend (see [Performance](#performance)) and the clickable **(F, k) phase-space map** (see [Controls](#controls)) — both were items on the original wishlist.
 
 ---
